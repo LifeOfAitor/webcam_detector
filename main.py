@@ -1,12 +1,16 @@
 import cv2
 import time
 
+from send_mail import send_mail
+
 video = cv2.VideoCapture(0)
 time.sleep(1)
 
 first_frame = None
+status_list = []
 
 while True:
+    status = 0
     check, frame = video.read()
     # preprocessing of the video, make it grey
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -15,6 +19,7 @@ while True:
     # save the first frame to compare with new frames
     if first_frame is None:
         first_frame = gray_frame_gau
+        continue
 
     # frame where it shows difference between first and current frame
     delta_frame = cv2.absdiff(first_frame, gray_frame_gau)
@@ -28,7 +33,15 @@ while True:
         if cv2.contourArea(contour) < 5000:
             continue
         x, y, w, h = cv2.boundingRect(contour)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
+        rectangle = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 5)
+        if rectangle.any():
+            status = 1
+
+    status_list.append(status)
+    status_list = status_list[-2:]
+
+    if status_list[0] == 1 and status_list[1] == 0:
+        send_mail()
 
     # show video
     cv2.imshow("My video", frame)
