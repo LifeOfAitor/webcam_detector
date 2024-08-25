@@ -1,5 +1,4 @@
 import os
-
 import cv2
 import time
 import glob
@@ -75,6 +74,7 @@ try:
                 cv2.imwrite(temp_image_path, cv2.imread(middle_image))
             image_paths.append(temp_image_path)
             clean_img_folder()
+            # save the images so many can be sent at once
             if len(image_paths) >= MAX_IMAGES:
                 try:
                     email_thread = Thread(target=send_mail, args=(image_paths,))
