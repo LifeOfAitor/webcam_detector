@@ -3,3 +3,4 @@ venv
 images
 web_credentials.txt
 __pycache__
+temporary_images
