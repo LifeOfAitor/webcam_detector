@@ -2,15 +2,7 @@ import cv2
 import time
 import glob
 from send_mail import send_mail
-import os
 from threading import Thread
-
-
-# clean the img folder when needed - after sending email -
-def clean_img_folder():
-    images = glob.glob("images/*.png")
-    for i in images:
-        os.remove(i)
 
 
 video = cv2.VideoCapture(0)
@@ -63,10 +55,12 @@ while True:
     # when moving object is out of frame list updates from 1 to 0
     if status_list[0] == 1 and status_list[1] == 0:
         try:
-            send_mail(middle_image)
+            # send email in the background
+            email_thread = Thread(target=send_mail, args=(middle_image,))
+            email_thread.daemon = True
+            email_thread.start()
         except Exception as e:
             print(f"Error sending email: {e}")
-        clean_img_folder()
 
     # show video
     cv2.imshow("My video", frame)
