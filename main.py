@@ -1,14 +1,25 @@
 import cv2
 import time
 import glob
-
 from send_mail import send_mail
+import os
+from threading import Thread
+
+
+# clean the img folder when needed - after sending email -
+def clean_img_folder():
+    images = glob.glob("images/*.png")
+    for i in images:
+        os.remove(i)
+
 
 video = cv2.VideoCapture(0)
 time.sleep(1)
-
+# define first frame and status list
 first_frame = None
 status_list = []
+# create middle_image to set a default in case something goes wrong
+middle_image = "images/fondo.jpg"
 
 image_count = 1
 while True:
@@ -30,7 +41,8 @@ while True:
     dil_frame = cv2.dilate(thresh_frame, None, iterations=2)
 
     # define contours of the found shapes to display them in green rectangles
-    contours, check = cv2.findContours(dil_frame, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours, check = cv2.findContours(dil_frame, cv2.RETR_EXTERNAL,
+                                       cv2.CHAIN_APPROX_SIMPLE)
     for contour in contours:
         if cv2.contourArea(contour) < 5000:
             continue
@@ -42,15 +54,20 @@ while True:
             cv2.imwrite(f"images/{image_count}.png", frame)
             image_count += 1
             all_images = glob.glob("images/*.png")
-            # get middle image from all the saved images
-            middle_image = all_images[int(len(all_images)/2)]
+            # get middle image path from all the saved images (int)
+            middle_image = all_images[(len(all_images) // 2)]
 
     status_list.append(status)
     status_list = status_list[-2:]
 
     # when moving object is out of frame list updates from 1 to 0
     if status_list[0] == 1 and status_list[1] == 0:
-        send_mail()
+        try:
+            send_mail(middle_image)
+        except Exception as e:
+            print(f"Error sending email: {e}")
+        clean_img_folder()
+
     # show video
     cv2.imshow("My video", frame)
 
@@ -59,5 +76,6 @@ while True:
     if key == ord("q"):
         break
 
+# Release the video capture and close windows
 video.release()
 cv2.destroyAllWindows()
